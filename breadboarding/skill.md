@@ -119,6 +119,56 @@ If the answer to #3 is "everything changes" or "I can't interact with what's beh
 
 When spanning multiple systems, label with the system: `PLACE: Checkout Page (frontend)`, `PLACE: Payment API (backend)`.
 
+### Place IDs
+
+Places are first-class elements in the data model. Each Place gets an ID:
+
+| # | Place | Description |
+|---|-------|-------------|
+| P1 | CMS Page (Read Mode) | View-only state |
+| P2 | CMS Page (Edit Mode) | Editing state with CRUD controls |
+| P3 | Letter Form Modal | Form for adding/editing letters |
+| P4 | Backend | API resolvers and database |
+
+Place IDs enable:
+- **Explicit navigation wiring** — wire `→ P2` instead of to an affordance inside
+- **Containment tracking** — each affordance declares which Place it belongs to
+- **Consistent Mermaid subgraphs** — subgraph ID matches Place ID
+
+### Containment vs Wiring
+
+These are two different relationships in the data model:
+
+| Relationship | Meaning | Where Captured |
+|--------------|---------|----------------|
+| **Containment** | Affordance belongs to / lives in a Place | **Place column** (set membership) |
+| **Wiring** | Affordance triggers / calls something | **Wires Out column** (control flow) |
+
+**Containment** is set membership: `U1 ∈ P1` means U1 is a member of Place P1. Every affordance belongs to exactly one Place.
+
+**Wiring** is control flow: `U1 → N1` means U1 triggers N1. An affordance can wire to anything — other affordances or Places.
+
+The Place column answers: "Where does this affordance live?"
+The Wires Out column answers: "What does this affordance trigger?"
+
+### Navigation Wiring
+
+When an affordance causes navigation (user "goes" somewhere), wire to the **Place itself**, not to an affordance inside:
+
+```
+✅ N1 Wires Out: → P2          (navigate to Edit Mode)
+❌ N1 Wires Out: → U3          (wiring to affordance inside P2)
+```
+
+This makes navigation explicit in the tables. The Place is the destination; specific affordances inside become available once you arrive.
+
+In Mermaid, this becomes:
+```mermaid
+N1 --> P2
+```
+
+The subgraph ID matches the Place ID, so the wire connects to the Place boundary.
+
 ### Affordances
 Things you can act upon:
 - **UI affordances (U)**: inputs, buttons, displayed elements, scroll regions
@@ -144,35 +194,51 @@ This separation makes data flow explicit. Wires Out show control flow (what trig
 
 The tables are the truth. Every breadboard produces these:
 
+### Places Table
+
+| # | Place | Description |
+|---|-------|-------------|
+| P1 | Search Page | Main search interface |
+| P2 | Detail Page | Individual result view |
+
 ### UI Affordances Table
 
-| # | Component | Affordance | Control | Wires Out | Returns To |
-|---|-----------|------------|---------|-----------|------------|
-| U1 | search-detail | search input | type | → N1 | — |
-| U2 | search-detail | loading spinner | render | — | — |
-| U3 | search-detail | results list | render | — | — |
+| # | Place | Component | Affordance | Control | Wires Out | Returns To |
+|---|-------|-----------|------------|---------|-----------|------------|
+| U1 | P1 | search-detail | search input | type | → N1 | — |
+| U2 | P1 | search-detail | loading spinner | render | — | — |
+| U3 | P1 | search-detail | results list | render | — | — |
+| U4 | P1 | search-detail | result row | click | → P2 | — |
 
 ### Code Affordances Table
 
-| # | Component | Affordance | Control | Wires Out | Returns To |
-|---|-----------|------------|---------|-----------|------------|
-| N1 | search-detail | `activeQuery.next()` | call | → N2 | — |
-| N2 | search-detail | `activeQuery` subscription | observe | → N3 | — |
-| N3 | search-detail | `performSearch()` | call | → N4, → N5, → N6 | — |
-| N4 | search.service | `searchOneCategory()` | call | → N7 | → N3 |
-| N5 | search-detail | `loading` | write | store | → U2 |
-| N6 | search-detail | `results` | write | store | → U3 |
-| N7 | typesense.service | `rawSearch()` | call | — | → N4 |
+| # | Place | Component | Affordance | Control | Wires Out | Returns To |
+|---|-------|-----------|------------|---------|-----------|------------|
+| N1 | P1 | search-detail | `activeQuery.next()` | call | → N2 | — |
+| N2 | P1 | search-detail | `activeQuery` subscription | observe | → N3 | — |
+| N3 | P1 | search-detail | `performSearch()` | call | → N4, → N5, → N6 | — |
+| N4 | P1 | search.service | `searchOneCategory()` | call | → N7 | → N3 |
+| N5 | P1 | search-detail | `loading` | write | store | → U2 |
+| N6 | P1 | search-detail | `results` | write | store | → U3 |
+| N7 | P1 | typesense.service | `rawSearch()` | call | — | → N4 |
+
+### Data Stores Table
+
+| # | Place | Store | Description |
+|---|-------|-------|-------------|
+| S1 | P1 | `results` | Array of search results |
+| S2 | P1 | `loading` | Boolean loading state |
 
 ### Column Definitions
 
 | Column | Description |
 |--------|-------------|
-| **#** | Unique ID (U1, U2... for UI; N1, N2... for Code) |
+| **#** | Unique ID (P1, P2... for Places; U1, U2... for UI; N1, N2... for Code; S1, S2... for Stores) |
+| **Place** | Which Place this affordance belongs to (containment) |
 | **Component** | Which component/service owns this |
 | **Affordance** | The specific thing you can act upon |
 | **Control** | The triggering event: click, type, call, observe, write, render |
-| **Wires Out** | What this triggers: `→ N4, → N6` (control flow) |
+| **Wires Out** | What this triggers: `→ N4`, `→ P2` (control flow, including navigation) |
 | **Returns To** | Where output flows: `→ N3` or `→ U2, U3` (data flow) |
 
 ---
@@ -298,6 +364,23 @@ The tables are the source of truth. Your memory is unreliable.
 ### Every affordance name must exist (when mapping)
 
 When mapping existing code, never invent abstractions. Every name must point to something real in the codebase.
+
+### Containers aren't affordances
+
+An affordance is something you can **act upon**. Visual containers, wrappers, and frames are not affordances — they're just the boundaries of Places.
+
+```
+❌ U7: modal-frame wrapper (render) — you can't act on a wrapper
+✅ U8: Save button (click) — you can click this
+✅ U9: Cancel button (click) — you can click this
+```
+
+When a modal opens, you navigate to a Place (P3). The modal's visual frame IS P3's boundary. Don't create a separate U for the wrapper — the Place itself captures that you're "in the modal."
+
+Opening the modal = navigating to P3:
+```
+N22 --> P3    (not N22 --> U7)
+```
 
 ### Every U needs an N
 
@@ -453,10 +536,20 @@ flowchart TB
 | Solid (`-->`) | `A --> B` | Wires Out: calls, triggers, writes |
 | Dashed (`-.->`) | `A -.-> B` | Returns To: return values, data store reads |
 
+### ID Prefixes
+
+| Prefix | Type | Example |
+|--------|------|---------|
+| **P** | Places | P1, P2, P3 |
+| **U** | UI affordances | U1, U2, U3 |
+| **N** | Code affordances | N1, N2, N3 |
+| **S** | Data stores | S1, S2, S3 |
+
 ### Color Conventions
 
 | Type | Color | Hex |
 |------|-------|-----|
+| Places (subgraphs) | White/transparent | — |
 | UI affordances | Pink | `#ffb6c1` |
 | Code affordances | Grey | `#d3d3d3` |
 | Data stores | Lavender | `#e6e6fa` |
@@ -469,15 +562,33 @@ classDef store fill:#e6e6fa,stroke:#9370db,color:#000
 classDef chunk fill:#b3e5fc,stroke:#0288d1,color:#000,stroke-width:2px
 ```
 
-### Subgraph Labels
+### Subgraph Labels and Place IDs
 
-| Type | Label Pattern | Purpose |
-|------|---------------|---------|
-| Place | `PLACE: Name` | A route/page the user visits |
-| Trigger | `TRIGGER: Name` | An event that kicks off a flow (not navigable) |
-| Component | `COMPONENT: Name` | Reusable UI+logic that appears in multiple places |
-| Data stores | `DATA STORES` | Tables and state that persist |
-| System | `SYSTEM: Name` | When spanning multiple applications |
+Use the Place ID as the subgraph ID so navigation wiring connects properly:
+
+```mermaid
+subgraph P1["P1: CMS Page (Read Mode)"]
+    U1["U1: Edit button"]
+    N1["N1: toggleEditMode()"]
+end
+
+subgraph P2["P2: CMS Page (Edit Mode)"]
+    U2["U2: Save button"]
+    U3["U3: Add button"]
+end
+
+%% Navigation wires to Place ID
+N1 --> P2
+```
+
+| Type | ID Pattern | Label Pattern | Purpose |
+|------|------------|---------------|---------|
+| Place | `P1`, `P2`... | `P1: Page Name` | A bounded context the user visits |
+| Trigger | — | `TRIGGER: Name` | An event that kicks off a flow (not navigable) |
+| Component | — | `COMPONENT: Name` | Reusable UI+logic that appears in multiple places |
+| System | — | `SYSTEM: Name` | When spanning multiple applications |
+
+**Key point:** The subgraph ID (`P1`, `P2`) must match the Place ID from the Places table. This allows navigation wires like `N1 --> P2` to connect to the Place boundary.
 
 ### When spanning multiple systems
 
