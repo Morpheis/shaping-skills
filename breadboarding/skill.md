@@ -365,22 +365,36 @@ The tables are the source of truth. Your memory is unreliable.
 
 When mapping existing code, never invent abstractions. Every name must point to something real in the codebase.
 
-### Containers aren't affordances
+### Mechanisms aren't affordances
 
-An affordance is something you can **act upon**. Visual containers, wrappers, and frames are not affordances — they're just the boundaries of Places.
+An affordance is something you can **act upon** that has meaningful identity in the system. Several things look like affordances but are actually just implementation mechanisms:
+
+| Type | Example | Why it's not an affordance |
+|------|---------|---------------------------|
+| Visual containers | `modal-frame wrapper` | You can't act on a wrapper — it's just a Place boundary |
+| Internal transforms | `letterDataTransform()` | Implementation detail of the caller — not separately actionable |
+| Navigation mechanisms | `modalService.open()` | Just the "how" of getting to a Place — wire to the destination directly |
+
+**These aren't always obvious on first draft.** When reviewing your affordance tables, double-check each Code affordance and ask:
+
+> "Is this actually an affordance, or is it just detailing the mechanism for how something happens?"
+
+If it's just the "how" — skip it and wire directly to the destination or outcome.
+
+**Examples:**
 
 ```
-❌ U7: modal-frame wrapper (render) — you can't act on a wrapper
-✅ U8: Save button (click) — you can click this
-✅ U9: Cancel button (click) — you can click this
+❌ N8 --> N22 --> P3     (N22 is modalService.open — just mechanism)
+✅ N8 --> P3             (handler navigates to modal)
+
+❌ N6 --> N20 --> S2     (N20 is data transform — internal to N6)
+✅ N6 --> S2             (callback writes to store)
+
+❌ U7: modal-frame       (wrapper — just the boundary of P3)
+✅ U8: Save button       (actionable)
 ```
 
-When a modal opens, you navigate to a Place (P3). The modal's visual frame IS P3's boundary. Don't create a separate U for the wrapper — the Place itself captures that you're "in the modal."
-
-Opening the modal = navigating to P3:
-```
-N22 --> P3    (not N22 --> U7)
-```
+The handler navigates to P3. The callback writes to the store. The modal IS P3. The mechanisms are implicit.
 
 ### Every U needs an N
 
