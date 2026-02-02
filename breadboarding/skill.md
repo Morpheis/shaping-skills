@@ -577,6 +577,20 @@ flowchart TB
 |------------|----------------|-----|
 | Solid (`-->`) | `A --> B` | Wires Out: calls, triggers, writes |
 | Dashed (`-.->`) | `A -.-> B` | Returns To: return values, data store reads |
+| Labeled `...` | `A -.->|...| B` | Abbreviated flow: intermediate steps omitted |
+
+#### Abbreviating Out-of-Scope Flows
+
+When a data flow has intermediate steps that aren't relevant to the breadboard's scope, abbreviate by wiring directly from source to destination with a `...` label:
+
+```mermaid
+S4 -.->|...| U6
+```
+
+This says "data flows from S4 to U6, with intermediate steps omitted." Use this when:
+- The flow exists but its internals are out of scope
+- You need to show where data originates without detailing the query chain
+- The breadboard focuses on one workflow (e.g., editing) but needs to acknowledge another (e.g., viewing)
 
 ### ID Prefixes
 
