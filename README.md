@@ -1,7 +1,5 @@
 # Shaping Skills
 
-> ⚠️ **Alpha / Experimental** — These skills are under active development. Expect rough edges.
-
 Claude Code skills for collaborative product shaping and system understanding.
 
 ---
@@ -48,6 +46,8 @@ Breadboards fill the gap between "high-level architecture" and "read the code." 
 ---
 
 ## Shaping
+
+> ⚠️ **Alpha / Experimental** — This skill is under active development. Expect rough edges.
 
 Shaping is a formalism for interacting with Claude Code when you want to iterate on both the requirements and different solution options. It provides notation and structure for exploring what to build before committing to implementation.
 
