@@ -136,6 +136,80 @@ Place IDs enable:
 - **Containment tracking** — each affordance declares which Place it belongs to
 - **Consistent Mermaid subgraphs** — subgraph ID matches Place ID
 
+### Place References
+
+When a nested place has lots of internal affordances and would clutter the parent, you can **detach** it:
+
+1. Put a **reference node** in the parent place using underscore prefix: `_letter-browser`
+2. Define the full place separately with all its internals
+3. Wire from the reference to the place: `_letter-browser --> letter-browser`
+
+The reference is a **UI affordance** — it represents "this widget/component renders here" in the parent context.
+
+```mermaid
+subgraph P1["P1: CMS Page (Read Mode)"]
+    U1["U1: Edit button"]
+    U_LB["_letter-browser"]
+end
+
+subgraph letterBrowser["letter-browser"]
+    U10["U10: Search input"]
+    U11["U11: Letter list"]
+    N40["N40: performSearch()"]
+end
+
+U_LB --> letterBrowser
+```
+
+In affordance tables, list the reference as a UI affordance:
+
+| # | Affordance | Control | Wires Out |
+|---|------------|---------|-----------|
+| U1 | Edit button | click | → N1 |
+| _letter-browser | Widget reference | — | → P3 |
+
+Style place references with a dashed border to distinguish them:
+```
+classDef placeRef fill:#ffb6c1,stroke:#d87093,stroke-width:2px,stroke-dasharray:5 5
+class U_LB placeRef
+```
+
+### Modes as Places
+
+When a component has distinct modes (read vs edit, viewing vs editing, collapsed vs expanded), model them as **separate places** — they're different perceptual states for the user.
+
+If one mode includes everything from another plus more, show this with a **place reference** inside the extended place:
+
+```
+P3: letter-browser (Read)    — base state
+P4: letter-browser (Edit)    — contains _letter-browser (Read) + new affordances
+```
+
+The reference shows composition: "everything in P3 appears here, plus these additions."
+
+```mermaid
+subgraph P3["P3: letter-browser (Read)"]
+    U10["U10: Search input"]
+    U11["U11: Letter list"]
+end
+
+subgraph P4["P4: letter-browser (Edit)"]
+    U_P3["_letter-browser (Read)"]
+    U3["U3: Add button"]
+    U4["U4: Edit button"]
+end
+
+U_P3 --> P3
+```
+
+In affordance tables for P4, the reference shows inheritance:
+
+| # | Affordance | Control | Wires Out | Notes |
+|---|------------|---------|-----------|-------|
+| _letter-browser (Read) | Inherits all of P3 | — | → P3 | |
+| U3 | Add button | click | → N3 | NEW |
+| U4 | Edit button | click | → N4 | NEW |
+
 ### Subplaces
 
 A **subplace** is a defined subset of a Place — a contained area that groups related affordances. Use subplaces when:
@@ -482,6 +556,29 @@ If a Code affordance has no Wires Out AND no Returns To, something is wrong:
 - Queries → should have Returns To (who receives their return value)
 - Data stores → should have Returns To (which affordances read them)
 
+### Side effects need stores
+
+An N that appears to wire nowhere is suspicious. If it has **side effects outside the system boundary** (browser URL, localStorage, external API, analytics), add a **store node** to represent that external state:
+
+```
+❌ N41: updateUrl()           (wires to... nothing?)
+✅ N41: updateUrl() → S15     (wires to Browser URL store)
+```
+
+This makes the data flow explicit. The store can also have return wires showing how external state flows back in:
+
+```mermaid
+N42["N42: performSearch()"] --> N41["N41: updateUrl()"]
+N41 --> S15["S15: Browser URL (?q=)"]
+S15 -.->|back button / init| N40["N40: activeQuery$"]
+```
+
+Common external stores to model:
+- `Browser URL` — query params, hash fragments
+- `localStorage` / `sessionStorage` — persisted client state
+- `Clipboard` — copy/paste operations
+- `Browser History` — navigation state
+
 ### Separate control flow from data flow
 
 Wires Out = control flow (what triggers what)
@@ -528,6 +625,7 @@ This section provides a complete reference of everything that can appear in a br
 |---------|------------|------------|----------------|
 | **Place** | P1, P2, P3... | A bounded context of interaction | Blocking test: can't interact with what's behind |
 | **Subplace** | P2.1, P2.2... | A defined subset within a Place | Groups related affordances within a larger Place |
+| **Place Reference** | _PlaceName | UI affordance pointing to a detached place | Complex nested place defined separately |
 | **UI Affordance** | U1, U2, U3... | Something the user can see or interact with | Inputs, buttons, displays, scroll regions |
 | **Code Affordance** | N1, N2, N3... | Something in code you can act upon | Methods, subscriptions, handlers, framework mechanisms |
 | **Data Store** | S1, S2, S3... | State that persists and is read/written | Properties, arrays, observables that hold data |
@@ -561,6 +659,12 @@ Wiring is control flow: `U1 → N1` means U1 triggers N1.
 - Examples: modal, edit mode (whole screen transforms), route/page
 - Not: dropdown, tooltip, checkbox revealing fields
 
+**Place Reference (_PlaceName):**
+- A UI affordance that represents a detached place
+- Use when a nested place has many affordances and would clutter the parent
+- Examples: `_letter-browser`, `_user-profile-widget`
+- Wires to the full place definition: `_letter-browser --> P3`
+
 **UI Affordance (U):**
 - User can see it or interact with it
 - Examples: button, input, list, spinner, displayed text
@@ -574,6 +678,7 @@ Wiring is control flow: `U1 → N1` means U1 triggers N1.
 **Data Store (S):**
 - State that is written and read
 - Examples: `results` array, `loading` boolean, `changedPosts` list
+- External stores: `Browser URL`, `localStorage`, `Clipboard` — represent state outside the app boundary
 - Not: config that's set once and never changes (consider as config affordance)
 
 ### Verification Checks
@@ -584,6 +689,7 @@ Wiring is control flow: `U1 → N1` means U1 triggers N1.
 | **Every N** | Does it have Wires Out or Returns To (or both)? | Investigate — may be dead code or missing wiring |
 | **Every S** | Does something read from it (Returns To)? | Investigate — may be unused |
 | **Navigation mechanisms** | Is this N just the "how" of getting somewhere? | Wire directly to Place instead |
+| **N with side effects** | Does this N affect external state (URL, storage, clipboard)? | Add a store for the external state |
 
 ---
 
@@ -726,12 +832,14 @@ This says "data flows from S4 to U6, with intermediate steps omitted." Use this 
 | Code affordances | Grey | `#d3d3d3` |
 | Data stores | Lavender | `#e6e6fa` |
 | Chunks | Light blue | `#b3e5fc` |
+| Place references | Pink, dashed border | `#ffb6c1` |
 
 ```
 classDef ui fill:#ffb6c1,stroke:#d87093,color:#000
 classDef nonui fill:#d3d3d3,stroke:#808080,color:#000
 classDef store fill:#e6e6fa,stroke:#9370db,color:#000
 classDef chunk fill:#b3e5fc,stroke:#0288d1,color:#000,stroke-width:2px
+classDef placeRef fill:#ffb6c1,stroke:#d87093,stroke-width:2px,stroke-dasharray:5 5
 ```
 
 ### Subgraph Labels and Place IDs
@@ -845,12 +953,27 @@ A vertical slice is a group of UI and Code affordances that does something demo-
 
 The opposite is a horizontal slice — doing work on one layer (e.g., "set up all the data models") that isn't clickable from the interface.
 
+### The Key Constraint
+
+**Every slice must have visible UI that can be demoed.** A slice without UI is a horizontal layer, not a vertical slice.
+
+- ✅ "Self-serve Signing Path" (demo: checkout → sign → see signature)
+- ❌ "Database Schema" (no demo possible)
+
 **Demo-able means:**
 - Has an entry point (UI interaction or trigger)
 - Has an observable output (UI renders, effect occurs)
 - Shows meaningful progress toward the R
 
 The shape guides what counts as "meaningful progress" — you're not just grouping affordances arbitrarily, you're grouping them to demonstrate mechanisms working.
+
+### Slice Size
+
+- **Too small:** Only 1-2 UI affordances, no meaningful demo → merge with related slice
+- **Too big:** 15+ affordances or multiple unrelated journeys → split
+- **Right size:** A coherent journey with a clear "watch me do this" demo
+
+Aim for ≤9 slices. If you need more, the shape may be too large for one cycle.
 
 ### Wires to Future Slices
 

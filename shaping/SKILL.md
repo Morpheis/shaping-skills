@@ -756,152 +756,18 @@ See **Multi-Level Consistency** at the top of this document. Changes at any leve
 
 ## Slicing
 
-Slicing breaks a breadboarded shape into vertical slices for incremental implementation. Each slice is end-to-end (schema → backend → UI) and can be demoed independently.
+After a shape is breadboarded, slice it into vertical implementation increments. Use the `/breadboarding` skill for the slicing process — it defines what vertical slices are, the procedure for creating them, and visualization formats.
 
-### Prerequisites
+**The flow:**
+1. **Parts** → high-level mechanisms in the shape
+2. **Breadboard** → concrete affordances with wiring (use `/breadboarding`)
+3. **Slices** → vertical increments that can each be demoed (use `/breadboarding` slicing section)
 
-Slicing requires a breadboarded shape. The inputs are:
-- **UI Affordances table** — identifies demo-able journeys
-- **Non-UI Affordances table** — identifies backend dependencies
-- **Wiring diagram** — shows how affordances connect
+**Key principle:** Every slice must end in demo-able UI. A slice without visible output is a horizontal layer, not a vertical slice.
 
-If these don't exist, breadboard the shape first.
-
-### The Key Constraint
-
-**Every slice must have visible UI that can be demoed.** A slice without UI is a horizontal layer, not a vertical slice.
-
-- ✅ "Self-serve Signing Path" (demo: checkout → sign → see signature)
-- ❌ "Database Schema" (no demo possible)
-
-### Process
-
-1. **Start from UI affordances.** Look at the U table and identify distinct user journeys or admin capabilities that can be demonstrated.
-
-2. **Each demo-able journey is a candidate slice.** Group by Place in the wiring diagram — each place is often one slice.
-
-3. **Pull in what each UI needs.** For each U in the slice, trace backwards:
-   - What Non-UI affordances (N) feed it?
-   - What data stores do those Ns read/write?
-   - Include all of these in the slice.
-
-4. **Identify reusable components.** If a component (like a modal) appears in multiple journeys, put it in the first slice that needs it. Later slices declare a dependency.
-
-5. **Trace dependencies via wiring.** Use the Wires Out column to understand which slices must come before others.
-
-### Slice Table Format
-
-Each slice lists its affordances by layer:
-
-```markdown
-## Slice 1: Self-serve Signing Path
-
-| # | Affordance | Layer |
-|---|------------|-------|
-| N4 | Waivers table | Schema |
-| N1 | WaiverSignatures table | Schema |
-| N5 | signWaiver() handler | Backend |
-| U1 | Waiver content display | UI |
-| U2 | "Click to sign" button | UI |
-| U11 | Signing modal | UI |
-
-**Demo:** Checkout → see waiver → sign → signature display appears.
-
-**Dependencies:** None
-```
-
-### Slice Size
-
-- **Too small:** Only 1-2 UI affordances, no meaningful demo → merge with related slice
-- **Too big:** 15+ affordances or multiple unrelated journeys → split
-- **Right size:** A coherent journey with a clear "watch me do this" demo
-
-### The 3x3 Grid
-
-Use a 3x3 grid to visualize all slices at a glance. This forces decisions about granularity:
-
-```
-┌─────────────────────────────┬─────────────────────────────┬─────────────────────────────┐
-│ 1. CHECKOUT WAIVER DISPLAY  │ 2. SIGNATURE COMPONENT      │ 3. POS REQUEST TRACKING     │
-│                             │                             │                             │
-│ Schema: Waivers, defaultId  │ Schema: Signatures,         │ Schema: WaiverRequests      │
-│ Backend: getDefaultWaiver   │         waiverUpToDate      │ Backend: onPOSPurchase      │
-│ UI: U1 waiver content       │ Backend: signWaiver(),      │                             │
-│                             │          checkSignedStatus  │ Demo: POS sale → request    │
-│ Demo: Checkout shows waiver │ UI: Signature (U2/U15),     │       record created        │
-│ Deps: —                     │     Signing modal (U11-14)  │ Deps: 1                     │
-│                             │                             │                             │
-│                             │ Demo: Click sign → modal →  │                             │
-│                             │       sign → shows signed   │                             │
-│                             │ Deps: 1                     │                             │
-├─────────────────────────────┼─────────────────────────────┼─────────────────────────────┤
-│ 4. EMAIL + SIGNING PAGE     │ 5. MEMBER WAIVERS TAB       │ 6. NEEDS ATTENTION          │
-│ ...                         │ ...                         │ ...                         │
-├─────────────────────────────┼─────────────────────────────┼─────────────────────────────┤
-│                             │                             │                             │
-│                             │                             │                             │
-└─────────────────────────────┴─────────────────────────────┴─────────────────────────────┘
-```
-
-The grid helps with:
-- **Granularity decisions:** "Could we fill more cells?" → split. "Are these too thin?" → merge.
-- **Seeing themes:** Rows often share a theme (e.g., Row 1 = Foundation, Row 2 = Complete flows).
-- **Tracking dependencies:** Each cell shows its deps at a glance.
-
-Aim for ≤9 slices. If you need more, the shape may be too large for one cycle.
-
-### Sliced Breadboard
-
-After defining slices, create a **sliced breadboard** — a copy of the wiring diagram with slice boundaries overlaid. This goes in both the **slices document** and the **Big Picture**.
-
-Use Mermaid subgraphs to wrap each slice's affordances:
-
-```mermaid
-flowchart TB
-    subgraph slice1["SLICE 1: Checkout Waiver Display"]
-        N4["N4 Waivers table"]
-        subgraph checkout["Self-serve checkout"]
-            N11a["N11 getDefaultWaiver()"] --> U1["U1 waiver content"]
-        end
-    end
-
-    subgraph slice2["SLICE 2: Signature Component"]
-        N1["N1 WaiverSignatures"]
-        subgraph signature["Signature"]
-            N15["N15 checkSignedStatus()"]
-            N15 -->|not signed| U2["U2 'Click to sign'"]
-            N15 -->|signed| U15["U15 signature display"]
-        end
-    end
-
-    %% Cross-slice dependencies shown as edges
-    N4 --> N11a
-
-    %% Style slice boundaries: dashed, no fill, thick stroke
-    style slice1 fill:none,stroke:#666,stroke-width:3px,stroke-dasharray: 8 4
-    style slice2 fill:none,stroke:#666,stroke-width:3px,stroke-dasharray: 8 4
-```
-
-Key formatting:
-- **Slice subgraphs:** `subgraph slice1["SLICE 1: Name"]` — outer container for each slice
-- **Place subgraphs:** Nested inside slices to preserve place organization
-- **Cross-slice edges:** Arrows between slices show dependencies visually
-- **Dashed borders:** `style sliceN fill:none,stroke:#666,stroke-width:3px,stroke-dasharray: 8 4`
-
-The sliced breadboard reveals:
-- Which arrows cross slice boundaries (these are the dependencies)
-- Where reusable components live (e.g., Signature in slice 2) vs. where they're referenced (slices 1, 4)
-- Schema ownership — each slice "owns" specific tables
-
-### Output
-
-Create a slices document listing:
-1. The 3x3 grid overview
-2. Each slice with its affordances by layer
-3. Demo description for each slice
-4. Dependencies between slices
-5. Dependency graph showing implementation order
-6. Sliced breadboard (Mermaid diagram with slice boundaries)
+**Document outputs:**
+- **Slices doc** — slice definitions, per-slice affordance tables, sliced breadboard
+- **Slice plans** — individual implementation plans (V1-plan.md, V2-plan.md, etc.)
 
 ## Example
 
