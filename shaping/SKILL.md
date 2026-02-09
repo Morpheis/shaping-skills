@@ -72,6 +72,7 @@ A numbered set defining the problem space.
 - Track status: Core goal, Undecided, Leaning yes/no, Must-have, Nice-to-have, Out
 - Requirements extracted from fit checks should be made standalone (not dependent on any specific shape)
 - **R states what's needed, not what's satisfied** — satisfaction is always shown in a fit check (R × S)
+- **Chunking policy:** Never have more than 9 top-level requirements. When R exceeds 9, group related requirements into chunks with sub-requirements (R3.1, R3.2, etc.) so the top level stays at 9 or fewer. This keeps the requirements scannable and forces meaningful grouping.
 
 ### S: Shapes (Solution Options)
 Letters represent mutually exclusive solution approaches.
@@ -190,6 +191,34 @@ When comparing alternatives for a specific component (e.g., C3-A vs C3-B), use t
 ### Missing Requirements
 If a shape passes all checks but still feels wrong, there's a missing requirement. Articulate the implicit constraint as a new R, then re-run the fit check.
 
+### Macro Fit Check
+
+A separate tool from the standard fit check, used when working at a high level with chunked requirements and early-stage shapes where most mechanisms are still ⚠️. Use when explicitly requested.
+
+The macro fit check has two columns per shape instead of one:
+
+- **Addressed?** — Does some part of the shape seem to speak to this requirement at a high level?
+- **Answered?** — Can you trace the concrete how? Is the mechanism actually spelled out?
+
+**Format:**
+
+```markdown
+## Macro Fit Check: R × A
+
+| Req | Requirement | Addressed? | Answered? |
+|-----|-------------|:----------:|:---------:|
+| R0 | Core goal description | ✅ | ❌ |
+| R1 | Guided workflow | ✅ | ❌ |
+| R2 | Agent boundary | ⚠️ | ❌ |
+```
+
+**Conventions:**
+- Only show top-level requirements (R0, R1, R2...), not sub-requirements
+- **No notes column** — keep the table narrow and scannable
+- Use ✅ (yes), ⚠️ (partially), ❌ (no) for Addressed
+- Use ✅ (yes) or ❌ (no) for Answered
+- Follow the macro fit check with a separate **Gaps** table listing specific missing parts and their related sub-requirements
+
 ## Possible Actions
 
 These can happen in any order:
@@ -226,6 +255,10 @@ Shaping is collaborative negotiation. The user needs to see the complete picture
 - Track what's been decided
 
 Summaries hide detail and shift control away from the user.
+
+### Mark Changes with 🟡
+
+When re-rendering a requirements table or shape table after making changes, mark every changed or added line with a 🟡 so the user can instantly spot what's different. Place the 🟡 at the start of the changed cell content. This makes iterative refinement easy to follow — the user should never have to diff the table mentally.
 
 ## Spikes
 
