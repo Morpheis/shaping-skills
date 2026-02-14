@@ -1,6 +1,6 @@
 ---
 name: shaping
-description: Use this methodology when collaboratively shaping a solution with the user - iterating on problem definition (requirements) and solution options (shapes).
+description: Use this methodology when collaboratively shaping a solution with the user - iterating on problem definition (requirements) and solution options (shapes). Based on Shape Up by Basecamp.
 ---
 
 # Shaping Methodology
@@ -38,6 +38,17 @@ Whenever making a change:
 4. **Never let documents drift out of sync**
 
 The system only works if the levels are consistent with each other.
+
+### Ripple Check (Self-Discipline)
+
+After every edit to a shaping document (any `.md` with `shaping: true` frontmatter), run this checklist:
+
+- **Updated a Breadboard diagram?** → Affordance tables are the source of truth. Update tables FIRST, then render to Mermaid.
+- **Changed Requirements?** → Update Fit Check + any Gaps, Open Questions by Part.
+- **Changed Shape Parts?** → Update Fit Check + any Gaps, Open Questions by Part.
+- **Changed Work Streams Detail?** → Update Work Streams Mermaid.
+
+This replaces the automated hook from Claude Code — internalize it as habit.
 
 ---
 
@@ -308,7 +319,7 @@ Avoid:
 
 ## Breadboards
 
-Use the `/breadboarding` skill to map existing systems or detail a shape into concrete affordances. Breadboarding produces:
+Use the the **breadboarding** skill (see `breadboarding/SKILL.md`) skill to map existing systems or detail a shape into concrete affordances. Breadboarding produces:
 - UI Affordances table
 - Non-UI Affordances table
 - Wiring diagram grouped by Place
@@ -446,7 +457,7 @@ Use "Detail X" (not a new letter) to show this is a breakdown of Shape X, not an
 
 ### What Detailing Produces
 
-Use the `/breadboarding` skill to produce:
+Use the the **breadboarding** skill (see `breadboarding/SKILL.md`) skill to produce:
 - **UI Affordances table** — Things users see and interact with (inputs, buttons, displays)
 - **Non-UI Affordances table** — Data stores, handlers, queries, services
 - **Wiring diagram** — How affordances connect across places
@@ -547,12 +558,12 @@ See **Multi-Level Consistency** at the top of this document. Changes at any leve
 
 ## Slicing
 
-After a shape is breadboarded, slice it into vertical implementation increments. Use the `/breadboarding` skill for the slicing process — it defines what vertical slices are, the procedure for creating them, and visualization formats.
+After a shape is breadboarded, slice it into vertical implementation increments. Use the the **breadboarding** skill (see `breadboarding/SKILL.md`) skill for the slicing process — it defines what vertical slices are, the procedure for creating them, and visualization formats.
 
 **The flow:**
 1. **Parts** → high-level mechanisms in the shape
-2. **Breadboard** → concrete affordances with wiring (use `/breadboarding`)
-3. **Slices** → vertical increments that can each be demoed (use `/breadboarding` slicing section)
+2. **Breadboard** → concrete affordances with wiring (use the **breadboarding** skill (see `breadboarding/SKILL.md`))
+3. **Slices** → vertical increments that can each be demoed (use the **breadboarding** skill (see `breadboarding/SKILL.md`) slicing section)
 
 **Key principle:** Every slice must end in demo-able UI. A slice without visible output is a horizontal layer, not a vertical slice.
 

@@ -1,6 +1,11 @@
+---
+name: breadboard-reflection
+description: Find design smells in a breadboard and fix them. Applies the naming test and wiring verification to existing breadboards built with the breadboarding skill.
+---
+
 # Breadboard Analysis
 
-Find design smells in a breadboard and fix them. Works on existing breadboards built with the `/breadboarding` skill.
+Find design smells in a breadboard and fix them. Works on existing breadboards built with the breadboarding skill.
 
 ---
 

@@ -1,62 +1,40 @@
-# Shaping Skills
+# Shaping Skills (OpenClaw Edition)
 
-[Claude Code](https://claude.com/claude-code) skills for shaping and breadboarding — the methodology from [Shape Up](https://basecamp.com/shapeup) adapted for working with an LLM.
+[OpenClaw](https://github.com/openclaw/openclaw) skills for shaping and breadboarding — the methodology from [Shape Up](https://basecamp.com/shapeup) adapted for working with an LLM.
 
-**Case study:** [Shaping 0-1 with Claude Code](https://x.com/rjs/status/2020184079350563263) walks through the full process of building a project from scratch using these skills. The source for that project is at [rjs/tick](https://github.com/rjs/tick).
+Forked from [rjs/shaping-skills](https://github.com/rjs/shaping-skills) and adapted for OpenClaw's skill system.
 
 ## Skills
 
-**`/shaping`** — Iterate on both the problem (requirements) and solution (shapes) before committing to implementation. Separates what you need from how you might build it, with fit checks to see what's solved and what isn't.
+- **shaping** — Iterate on both the problem (requirements) and solution (shapes) before committing to implementation. Separates what you need from how you might build it, with fit checks to see what's solved and what isn't.
 
-**`/breadboarding`** — Map a system into UI affordances, code affordances, and wiring. Shows what users can do and how it works underneath — in one view. Good for slicing into vertical scopes.
+- **breadboarding** — Map a system into UI affordances, code affordances, and wiring. Shows what users can do and how it works underneath — in one view. Good for slicing into vertical scopes.
 
-## Install
+- **breadboard-reflection** — Find design smells in a breadboard and fix them. Works on existing breadboards built with the breadboarding skill.
 
-```bash
-# Clone the repo, then symlink each skill into your Claude Code skills directory
-git clone https://github.com/rjs/shaping-skills.git ~/.local/share/shaping-skills
-ln -s ~/.local/share/shaping-skills/breadboarding ~/.claude/skills/breadboarding
-ln -s ~/.local/share/shaping-skills/shaping ~/.claude/skills/shaping
-```
+## Install (OpenClaw)
 
-Each skill must be a direct child of `~/.claude/skills/` so Claude Code can discover it. Symlinks keep them updatable with `git pull`.
-
-## Hook: Ripple Check
-
-The repo includes a hook that reminds Claude to check for ripple effects when editing shaping documents. When Claude writes or edits a `.md` file with `shaping: true` in its frontmatter, the hook prompts a checklist — update affordance tables, fit checks, work streams, etc.
-
-### Setup
-
-1. Symlink the hook script:
+Skills are symlinked into your OpenClaw skills directory:
 
 ```bash
-mkdir -p ~/.claude/hooks
-ln -s ~/.local/share/shaping-skills/hooks/shaping-ripple.sh ~/.claude/hooks/shaping-ripple.sh
+# Clone the repo
+git clone https://github.com/Morpheis/shaping-skills.git ~/Personal/shaping-skills
+
+# Symlink each skill into OpenClaw's user skills directory
+ln -s ~/Personal/shaping-skills/shaping ~/.openclaw/skills/shaping
+ln -s ~/Personal/shaping-skills/breadboarding ~/.openclaw/skills/breadboarding
+ln -s ~/Personal/shaping-skills/breadboard-reflection ~/.openclaw/skills/breadboard-reflection
 ```
 
-2. Add the hook to your `~/.claude/settings.json`:
+Each skill directory contains a `SKILL.md` that OpenClaw discovers automatically.
 
-```json
-{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/shaping-ripple.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ]
-  }
-}
-```
+## Changes from Upstream
 
-This fires after every `Write` or `Edit` tool call. It only activates for shaping documents (those with `shaping: true` frontmatter) — all other files pass through silently.
+- Renamed `skill.md` → `SKILL.md` (OpenClaw convention)
+- Ripple-check hook internalized as self-discipline guidance in the shaping skill
+- Cross-references updated for OpenClaw skill resolution
+- README updated for OpenClaw installation
 
----
+## Original
 
-This README was written by [Claude Code](https://claude.com/claude-code).
+Case study: [Shaping 0-1 with Claude Code](https://x.com/rjs/status/2020184079350563263) walks through the full process of building a project from scratch using these skills. The source for that project is at [rjs/tick](https://github.com/rjs/tick).
